@@ -1,14 +1,16 @@
+import java.util.Scanner;
+
 void main() {
 	FileSystemSimulator fs = new FileSystemSimulator();
 	Scanner scanner = new Scanner(System.in);
 
-	IO.println("=== Simulador de Sistema de Arquivos ===");
-	IO.println("Comandos: mkdir  rmdir  mvdir  touch  cp  rm  mv  ls  log  exit");
-	IO.println("Exemplo:  mkdir /documentos");
-	IO.println();
+	System.out.println("=== Simulador de Sistema de Arquivos ===");
+	System.out.println("Comandos: mkdir  rmdir  renamedir  touch  cp  rm  rename  ls  cd  save  log  exit");
+	System.out.println("Exemplo:  mkdir /documentos");
+	System.out.println();
 
 	while (true) {
-		IO.print("> ");
+		System.out.print(fs.getCurrentPath() + "> ");
 		if (!scanner.hasNextLine()) break;
 		String line = scanner.nextLine().trim();
 		if (line.isEmpty()) continue;
@@ -19,66 +21,78 @@ void main() {
 		switch (cmd) {
 			case "mkdir":
 				if (parts.length < 2) {
-					IO.println("Uso: mkdir <caminho>");
+					System.out.println("Uso: mkdir <caminho>");
 					break;
 				}
 				fs.createDirectory(parts[1]);
 				break;
 			case "rmdir":
 				if (parts.length < 2) {
-					IO.println("Uso: rmdir <caminho>");
+					System.out.println("Uso: rmdir <caminho>");
 					break;
 				}
 				fs.deleteDirectory(parts[1]);
 				break;
-			case "mvdir":
+			case "renamedir":
 				if (parts.length < 3) {
-					IO.println("Uso: mvdir <caminho> <novo-nome>");
+					System.out.println("Uso: renamedir <caminho> <novo-nome>");
 					break;
 				}
 				fs.renameDirectory(parts[1], parts[2]);
 				break;
 			case "touch":
 				if (parts.length < 2) {
-					IO.println("Uso: touch <caminho>");
+					System.out.println("Uso: touch <caminho>");
 					break;
 				}
 				fs.createFile(parts[1]);
 				break;
 			case "cp":
 				if (parts.length < 3) {
-					IO.println("Uso: cp <origem> <destino>");
+					System.out.println("Uso: cp <origem> <destino>");
 					break;
 				}
 				fs.copyFile(parts[1], parts[2]);
 				break;
 			case "rm":
 				if (parts.length < 2) {
-					IO.println("Uso: rm <caminho>");
+					System.out.println("Uso: rm <caminho>");
 					break;
 				}
 				fs.deleteFile(parts[1]);
 				break;
-			case "mv":
+			case "rename":
 				if (parts.length < 3) {
-					IO.println("Uso: mv <caminho> <novo-nome>");
+					System.out.println("Uso: rename <caminho> <novo-nome>");
 					break;
 				}
 				fs.renameFile(parts[1], parts[2]);
 				break;
 			case "ls":
-				fs.listDirectory(parts.length >= 2 ? parts[1] : "/");
+				fs.listDirectory(parts.length >= 2 ? parts[1] : "");
+				break;
+			case "cd":
+				if (parts.length < 2) {
+					System.out.println("Uso: cd <caminho>");
+					break;
+				}
+				if (!fs.changeDirectory(parts[1])) {
+					System.out.println("Erro: diretório não encontrado: " + parts[1]);
+				}
+				break;
+			case "save":
+				fs.save();
 				break;
 			case "log":
 				fs.printJournal();
 				break;
 			case "exit":
-				IO.println("Encerrando simulador.");
+				System.out.println("Encerrando simulador.");
 				scanner.close();
 				return;
 			default:
-				IO.println("Comando desconhecido: " + cmd);
-				IO.println("Comandos: mkdir  rmdir  mvdir  touch  cp  rm  mv  ls  log  exit");
+				System.out.println("Comando desconhecido: " + cmd);
+				System.out.println("Comandos: mkdir  rmdir  renamedir  touch  cp  rm  rename  ls  log  exit");
 		}
 	}
 

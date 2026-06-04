@@ -1,9 +1,11 @@
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-class Journal {
+class Journal implements Serializable {
+    private static final long serialVersionUID = 1;
     private List<String> log = new ArrayList<>();
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 

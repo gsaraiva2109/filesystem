@@ -1,13 +1,28 @@
+import java.io.*;
+
 class FileSystemSimulator {
-    private final Directory root;
-    private final Journal journal;
+    private Directory root;
+    private Journal journal;
+    private String currentPath = "/";
 
     FileSystemSimulator() {
-        this.root = new Directory("/");
-        this.journal = new Journal();
+        if (!load()) {
+            this.root = new Directory("/");
+            this.journal = new Journal();
+        }
+    }
+
+    String getCurrentPath() {
+        return currentPath;
     }
 
     // --- path helpers ---
+
+    private String toAbsolute(String path) {
+        if (path.startsWith("/")) return path;
+        if (currentPath.equals("/")) return "/" + path;
+        return currentPath + "/" + path;
+    }
 
     private Directory resolveParent(String path) {
         String[] parts = path.split("/");
@@ -44,51 +59,73 @@ class FileSystemSimulator {
         return current;
     }
 
+    // --- navigation ---
+
+    boolean changeDirectory(String path) {
+        if (path.equals("..")) {
+            if (currentPath.equals("/")) return true;  // já está na raiz
+            int lastSlash = currentPath.lastIndexOf("/");
+            currentPath = lastSlash == 0 ? "/" : currentPath.substring(0, lastSlash);
+            return true;
+        }
+
+        if (path.equals(".")) return true;
+
+        String resolved = toAbsolute(path);
+        FileNode node = resolve(resolved);
+        if (node == null || !node.isDirectory) return false;
+        currentPath = resolved;
+        return true;
+    }
+
     // --- directory operations ---
 
     void createDirectory(String path) {
-        journal.record("MKDIR: " + path);
-        Directory parent = resolveParent(path);
-        String name = lastName(path);
+        String abs = toAbsolute(path);
+        journal.record("MKDIR: " + abs);
+        Directory parent = resolveParent(abs);
+        String name = lastName(abs);
         if (parent == null || name.isEmpty()) {
             System.out.println("Erro: caminho inválido: " + path);
             return;
         }
         if (parent.children.containsKey(name)) {
-            System.out.println("Erro: já existe: " + path);
+            System.out.println("Erro: já existe: " + abs);
             return;
         }
         parent.children.put(name, new Directory(name));
-        System.out.println("Diretório criado: " + path);
+        System.out.println("Diretório criado: " + abs);
     }
 
     void deleteDirectory(String path) {
-        journal.record("RMDIR: " + path);
-        Directory parent = resolveParent(path);
-        String name = lastName(path);
+        String abs = toAbsolute(path);
+        journal.record("RMDIR: " + abs);
+        Directory parent = resolveParent(abs);
+        String name = lastName(abs);
         if (parent == null || !parent.children.containsKey(name)) {
-            System.out.println("Erro: não encontrado: " + path);
+            System.out.println("Erro: não encontrado: " + abs);
             return;
         }
         if (!parent.children.get(name).isDirectory) {
-            System.out.println("Erro: não é diretório (use rm): " + path);
+            System.out.println("Erro: não é diretório (use rm): " + abs);
             return;
         }
         parent.children.remove(name);
-        System.out.println("Diretório removido: " + path);
+        System.out.println("Diretório removido: " + abs);
     }
 
     void renameDirectory(String path, String newName) {
-        journal.record("MVDIR: " + path + " -> " + newName);
-        Directory parent = resolveParent(path);
-        String name = lastName(path);
+        String abs = toAbsolute(path);
+        journal.record("MVDIR: " + abs + " -> " + newName);
+        Directory parent = resolveParent(abs);
+        String name = lastName(abs);
         if (parent == null || !parent.children.containsKey(name)) {
-            System.out.println("Erro: não encontrado: " + path);
+            System.out.println("Erro: não encontrado: " + abs);
             return;
         }
         FileNode node = parent.children.get(name);
         if (!node.isDirectory) {
-            System.out.println("Erro: não é diretório (use mv): " + path);
+            System.out.println("Erro: não é diretório (use mv): " + abs);
             return;
         }
         parent.children.remove(name);
@@ -100,61 +137,66 @@ class FileSystemSimulator {
     // --- file operations ---
 
     void createFile(String path) {
-        journal.record("TOUCH: " + path);
-        Directory parent = resolveParent(path);
-        String name = lastName(path);
+        String abs = toAbsolute(path);
+        journal.record("TOUCH: " + abs);
+        Directory parent = resolveParent(abs);
+        String name = lastName(abs);
         if (parent == null || name.isEmpty()) {
             System.out.println("Erro: caminho inválido: " + path);
             return;
         }
         parent.children.put(name, new FileEntry(name));
-        System.out.println("Arquivo criado: " + path);
+        System.out.println("Arquivo criado: " + abs);
     }
 
     void copyFile(String srcPath, String destPath) {
-        journal.record("COPY: " + srcPath + " -> " + destPath);
-        FileNode src = resolve(srcPath);
+        String srcAbs = toAbsolute(srcPath);
+        String destAbs = toAbsolute(destPath);
+        journal.record("COPY: " + srcAbs + " -> " + destAbs);
+        FileNode src = resolve(srcAbs);
         if (src == null || src.isDirectory) {
-            System.out.println("Erro: arquivo não encontrado: " + srcPath);
+            System.out.println("Erro: arquivo não encontrado: " + srcAbs);
             return;
         }
-        Directory destParent = resolveParent(destPath);
-        String destName = lastName(destPath);
+        Directory destParent = resolveParent(destAbs);
+        String destName = lastName(destAbs);
         if (destParent == null || destName.isEmpty()) {
-            System.out.println("Erro: destino inválido: " + destPath);
+            System.out.println("Erro: destino inválido: " + destAbs);
             return;
         }
         destParent.children.put(destName, new FileEntry(destName, ((FileEntry) src).content));
-        System.out.println("Arquivo copiado: " + srcPath + " -> " + destPath);
+        System.out.println("Arquivo copiado: " + srcAbs + " -> " + destAbs);
     }
 
     void deleteFile(String path) {
-        journal.record("RM: " + path);
-        Directory parent = resolveParent(path);
-        String name = lastName(path);
+        String abs = toAbsolute(path);
+        journal.record("RM: " + abs);
+        Directory parent = resolveParent(abs);
+        String name = lastName(abs);
         if (parent == null || !parent.children.containsKey(name)) {
-            System.out.println("Erro: não encontrado: " + path);
+            System.out.println("Erro: não encontrado: " + abs);
             return;
         }
         if (parent.children.get(name).isDirectory) {
-            System.out.println("Erro: é um diretório (use rmdir): " + path);
+            System.out.println("Erro: é um diretório (use rmdir): " + abs);
             return;
         }
         parent.children.remove(name);
-        System.out.println("Arquivo removido: " + path);
+        System.out.println("Arquivo removido: " + abs);
     }
 
     void renameFile(String path, String newName) {
-        journal.record("MV: " + path + " -> " + newName);
-        Directory parent = resolveParent(path);
-        String name = lastName(path);
+        String abs = toAbsolute(path);
+        journal.record("MV: " + abs + " -> " + newName);
+        Directory parent = resolveParent(abs);
+        String name = lastName(abs);
         if (parent == null || !parent.children.containsKey(name)) {
-            System.out.println("Erro: não encontrado: " + path);
+            System.out.println("Erro: não encontrado: " + abs);
             return;
         }
         FileNode node = parent.children.get(name);
         if (node.isDirectory) {
-            System.out.println("Erro: é um diretório (use mvdir): " + path);
+            System.out.println("Erro: é um diretório (use mvdir): " + abs);
             return;
         }
         parent.children.remove(name);
@@ -164,10 +206,11 @@ class FileSystemSimulator {
     }
 
     void listDirectory(String path) {
-        journal.record("LS: " + path);
-        FileNode node = resolve(path);
+        String abs = path.isEmpty() ? currentPath : toAbsolute(path);
+        journal.record("LS: " + abs);
+        FileNode node = resolve(abs);
         if (node == null || !node.isDirectory) {
-            System.out.println("Erro: diretório não encontrado: " + path);
+            System.out.println("Erro: diretório não encontrado: " + abs);
             return;
         }
         Directory dir = (Directory) node;
@@ -182,5 +225,32 @@ class FileSystemSimulator {
 
     void printJournal() {
         journal.printLog();
+    }
+
+    // --- persistence ---
+
+    void save() {
+        var dir = new File("data");
+        dir.mkdirs();
+        try (var oos = new ObjectOutputStream(new FileOutputStream("data/filesystem.dat"))) {
+            oos.writeObject(root);
+            oos.writeObject(journal);
+            System.out.println("Salvo em data/filesystem.dat");
+        } catch (IOException e) {
+            System.out.println("Erro ao salvar: " + e.getMessage());
+        }
+    }
+
+    boolean load() {
+        var file = new File("data/filesystem.dat");
+        if (!file.exists()) return false;
+        try (var ois = new ObjectInputStream(new FileInputStream(file))) {
+            root = (Directory) ois.readObject();
+            journal = (Journal) ois.readObject();
+            return true;
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Erro ao carregar: " + e.getMessage());
+            return false;
+        }
     }
 }

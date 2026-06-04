@@ -1,4 +1,5 @@
 class FileEntry extends FileNode {
+    private static final long serialVersionUID = UID;
     String content;
 
     FileEntry(String name) {
