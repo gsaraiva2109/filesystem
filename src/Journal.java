@@ -20,4 +20,20 @@ class Journal implements Serializable {
         }
         log.forEach(System.out::println);
     }
+
+    boolean isEmpty() {
+        return log.isEmpty();
+    }
+
+    String lastEntry() {
+        return log.getLast();
+    }
+
+    void removeLast() {
+        log.removeLast();
+    }
+
+    void pushBack(String entry) {
+        log.add(entry);
+    }
 }

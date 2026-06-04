@@ -19,6 +19,7 @@ class FileSystemSimulator {
     // --- path helpers ---
 
     private String toAbsolute(String path) {
+        if (path.equals(".")) return currentPath;
         if (path.startsWith("/")) return path;
         if (currentPath.equals("/")) return "/" + path;
         return currentPath + "/" + path;
@@ -98,8 +99,12 @@ class FileSystemSimulator {
     }
 
     void deleteDirectory(String path) {
+        deleteDirectory(path, false);
+    }
+
+    void deleteDirectory(String path, boolean byJournal) {
         String abs = toAbsolute(path);
-        journal.record("RMDIR: " + abs);
+        if (!byJournal) journal.record("RMDIR: " + abs);
         Directory parent = resolveParent(abs);
         String name = lastName(abs);
         if (parent == null || !parent.children.containsKey(name)) {
@@ -111,12 +116,16 @@ class FileSystemSimulator {
             return;
         }
         parent.children.remove(name);
-        System.out.println("Diretório removido: " + abs);
+        if (!byJournal) System.out.println("Diretório removido: " + abs);
     }
 
     void renameDirectory(String path, String newName) {
+        renameDirectory(path, newName, false);
+    }
+
+    void renameDirectory(String path, String newName, boolean byJournal) {
         String abs = toAbsolute(path);
-        journal.record("MVDIR: " + abs + " -> " + newName);
+        if (!byJournal) journal.record("MVDIR: " + abs + " -> " + newName);
         Directory parent = resolveParent(abs);
         String name = lastName(abs);
         if (parent == null || !parent.children.containsKey(name)) {
@@ -131,7 +140,7 @@ class FileSystemSimulator {
         parent.children.remove(name);
         node.name = newName;
         parent.children.put(newName, node);
-        System.out.println("Diretório renomeado: " + name + " -> " + newName);
+        if (!byJournal) System.out.println("Diretório renomeado: " + name + " -> " + newName);
     }
 
     // --- file operations ---
@@ -169,8 +178,12 @@ class FileSystemSimulator {
     }
 
     void deleteFile(String path) {
+        deleteFile(path, false);
+    }
+
+    void deleteFile(String path, boolean byJournal) {
         String abs = toAbsolute(path);
-        journal.record("RM: " + abs);
+        if (!byJournal) journal.record("RM: " + abs);
         Directory parent = resolveParent(abs);
         String name = lastName(abs);
         if (parent == null || !parent.children.containsKey(name)) {
@@ -182,12 +195,16 @@ class FileSystemSimulator {
             return;
         }
         parent.children.remove(name);
-        System.out.println("Arquivo removido: " + abs);
+        if (!byJournal) System.out.println("Arquivo removido: " + abs);
     }
 
     void renameFile(String path, String newName) {
+        renameFile(path, newName, false);
+    }
+
+    void renameFile(String path, String newName, boolean byJournal) {
         String abs = toAbsolute(path);
-        journal.record("MV: " + abs + " -> " + newName);
+        if (!byJournal) journal.record("MV: " + abs + " -> " + newName);
         Directory parent = resolveParent(abs);
         String name = lastName(abs);
         if (parent == null || !parent.children.containsKey(name)) {
@@ -202,12 +219,11 @@ class FileSystemSimulator {
         parent.children.remove(name);
         node.name = newName;
         parent.children.put(newName, node);
-        System.out.println("Arquivo renomeado: " + name + " -> " + newName);
+        if (!byJournal) System.out.println("Arquivo renomeado: " + name + " -> " + newName);
     }
 
     void listDirectory(String path) {
         String abs = path.isEmpty() ? currentPath : toAbsolute(path);
-        journal.record("LS: " + abs);
         FileNode node = resolve(abs);
         if (node == null || !node.isDirectory) {
             System.out.println("Erro: diretório não encontrado: " + abs);
@@ -222,6 +238,113 @@ class FileSystemSimulator {
             System.out.println((child.isDirectory ? "[DIR]  " : "[FILE] ") + child.name);
         }
     }
+
+    void printTree(String path) {
+        String abs = path.isEmpty() ? currentPath : toAbsolute(path);
+        FileNode node = resolve(abs);
+        if (node == null || !node.isDirectory) {
+            System.out.println("Erro: diretório não encontrado: " + abs);
+            return;
+        }
+        System.out.println(abs);
+        printTreeRec((Directory) node, "");
+    }
+
+    private void printTreeRec(Directory dir, String prefix) {
+        var entries = dir.children.entrySet().toArray();
+        for (int i = 0; i < entries.length; i++) {
+            var entry = (java.util.Map.Entry<String, FileNode>) entries[i];
+            boolean last = (i == entries.length - 1);
+            String connector = last ? "└── " : "├── ";
+            String label = entry.getValue().isDirectory ? "[DIR] " : "[FILE] ";
+            System.out.println(prefix + connector + label + entry.getKey());
+            if (entry.getValue().isDirectory) {
+                String newPrefix = prefix + (last ? "    " : "│   ");
+                printTreeRec((Directory) entry.getValue(), newPrefix);
+            }
+        }
+    }
+
+    // --- undo ---
+
+    void undo() {
+        if (journal.isEmpty()) {
+            System.out.println("Nada para desfazer");
+            return;
+        }
+
+        String last = journal.lastEntry();
+        journal.removeLast();
+        String op = extractOperation(last);
+        String path = extractPath(last);
+
+
+        switch (op) {
+            case "MKDIR":
+                deleteDirectory(path, true);
+                System.out.println("Desfeito: " + last);
+                break;
+
+            case "TOUCH":
+                deleteFile(path, true);
+                System.out.println("Desfeito: " + last);
+                break;
+
+            case "COPY": {
+                String dest = last.substring(last.indexOf(" -> ") + 4);
+                deleteFile(dest, true);
+                System.out.println("Desfeito: " + last);
+                break;
+            }
+
+            case "MV": {
+                String newName = last.substring(last.indexOf(" -> ") + 4);
+                String parent = parentPath(path);
+                String currentPath = parent.equals("/") ? "/" + newName : parent + "/" + newName;
+                String origName = lastName(path);
+                renameFile(currentPath, origName, true);
+                System.out.println("Desfeito: " + last);
+                break;
+            }
+
+            case "MVDIR": {
+                String newName = last.substring(last.indexOf(" -> ") + 4);
+                String parent = parentPath(path);
+                String currentPath = parent.equals("/") ? "/" + newName : parent + "/" + newName;
+                String origName = lastName(path);
+                renameDirectory(currentPath, origName, true);
+                System.out.println("Desfeito: " + last);
+                break;
+            }
+
+            case "RM":
+            case "RMDIR":
+                journal.pushBack(last); // recoloca porque não desfez
+                System.out.println("Não é possível desfazer " + op + ": dados perdidos");
+                break;
+        }
+    }
+
+    private String extractOperation(String entry) {
+        String afterBracket = entry.substring(entry.indexOf("] ") + 2);
+        return afterBracket.substring(0, afterBracket.indexOf(": "));
+    }
+
+    private String extractPath(String entry) {
+        String afterBracket = entry.substring(entry.indexOf("] ") + 2);
+        int space = afterBracket.indexOf(": ");
+        String rest = afterBracket.substring(space + 2);
+        int arrow = rest.indexOf(" -> ");
+        return arrow == -1 ? rest : rest.substring(0, arrow);
+    }
+
+    private String parentPath(String path) {
+        if (path.equals("/")) return "/";
+        int lastSlash = path.lastIndexOf("/");
+        return lastSlash == 0 ? "/" : path.substring(0, lastSlash);
+    }
+
+    // --- journal ---
 
     void printJournal() {
         journal.printLog();

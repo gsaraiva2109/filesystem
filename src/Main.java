@@ -4,8 +4,8 @@ void main() {
 	FileSystemSimulator fs = new FileSystemSimulator();
 	Scanner scanner = new Scanner(System.in);
 
-	System.out.println("=== Simulador de Sistema de Arquivos ===");
-	System.out.println("Comandos: mkdir  rmdir  renamedir  touch  cp  rm  rename  ls  cd  save  log  exit");
+	System.out.println("Bem Vindo(a)!");
+	System.out.println("Comandos: mkdir  rmdir  renamedir  touch  cp  rm  rename  ls  cd  tree  undo  save  log  exit");
 	System.out.println("Exemplo:  mkdir /documentos");
 	System.out.println();
 
@@ -80,6 +80,12 @@ void main() {
 					System.out.println("Erro: diretório não encontrado: " + parts[1]);
 				}
 				break;
+			case "tree":
+				fs.printTree(parts.length >= 2 ? parts[1] : "");
+				break;
+			case "undo":
+				fs.undo();
+				break;
 			case "save":
 				fs.save();
 				break;
@@ -92,7 +98,7 @@ void main() {
 				return;
 			default:
 				System.out.println("Comando desconhecido: " + cmd);
-				System.out.println("Comandos: mkdir  rmdir  renamedir  touch  cp  rm  rename  ls  log  exit");
+				System.out.println("Comandos: mkdir  rmdir  renamedir  touch  cp  rm  rename  ls  cd  tree  undo  save  log  exit");
 		}
 	}
 
