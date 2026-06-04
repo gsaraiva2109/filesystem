@@ -1,10 +1,10 @@
 class FileEntry extends FileNode {
-    private static final long serialVersionUID = UID;
+    @java.io.Serial
+    private static final long serialVersionUID = 1L;
     String content;
 
     FileEntry(String name) {
-        super(name, false);
-        this.content = "";
+        this(name, "");
     }
 
     FileEntry(String name, String content) {

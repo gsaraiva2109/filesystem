@@ -251,10 +251,10 @@ class FileSystemSimulator {
     }
 
     private void printTreeRec(Directory dir, String prefix) {
-        var entries = dir.children.entrySet().toArray();
-        for (int i = 0; i < entries.length; i++) {
-            var entry = (java.util.Map.Entry<String, FileNode>) entries[i];
-            boolean last = (i == entries.length - 1);
+        int i = 0;
+        int size = dir.children.size();
+        for (var entry : dir.children.entrySet()) {
+            boolean last = (++i == size);
             String connector = last ? "└── " : "├── ";
             String label = entry.getValue().isDirectory ? "[DIR] " : "[FILE] ";
             System.out.println(prefix + connector + label + entry.getKey());
@@ -277,7 +277,6 @@ class FileSystemSimulator {
         journal.removeLast();
         String op = extractOperation(last);
         String path = extractPath(last);
-
 
         switch (op) {
             case "MKDIR":
@@ -354,7 +353,10 @@ class FileSystemSimulator {
 
     void save() {
         var dir = new File("data");
-        dir.mkdirs();
+        if (!dir.exists() && !dir.mkdirs()) {
+            System.out.println("Erro: não foi possível criar diretório data/");
+            return;
+        }
         try (var oos = new ObjectOutputStream(new FileOutputStream("data/filesystem.dat"))) {
             oos.writeObject(root);
             oos.writeObject(journal);

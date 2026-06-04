@@ -1,9 +1,9 @@
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 class Directory extends FileNode {
-    private static final long serialVersionUID = UID;
-    Map<String, FileNode> children = new LinkedHashMap<>();
+    @java.io.Serial
+    private static final long serialVersionUID = 1L;
+    LinkedHashMap<String, FileNode> children = new LinkedHashMap<>();
 
     Directory(String name) {
         super(name, true);

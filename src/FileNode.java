@@ -1,7 +1,8 @@
 import java.io.Serializable;
 
 abstract class FileNode implements Serializable {
-    static final long UID = 1;
+    @java.io.Serial
+    private static final long serialVersionUID = 1L;
     String name;
     boolean isDirectory;
 
