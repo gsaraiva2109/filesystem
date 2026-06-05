@@ -30,7 +30,7 @@ Journaling é uma técnica de combate a falhas que registra as intenções de mu
 
 ---
 
-## Parte 2: Arquitetura do Simulador
+## Arquitetura do Simulador
 
 ### Estrutura de Dados
 O simulador utiliza uma estrutura de árvore para representar a hierarquia de arquivos. Cada nó da árvore é representado por objetos (Directory ou FileEntry) que extendem de uma classe base (FileNode), permitindo que diretórios contenham tanto arquivos quanto outros subdiretórios.
@@ -45,7 +45,7 @@ O comando `save` deve ser utilizado para salvar o sistema (filesystem e journal)
 
 ---
 
-## Parte 3: Implementação em Java
+## Implementação em Java
 
 ### Classe "FileSystemSimulator"
 É o núcleo do projeto. Implementa a lógica de negócio para todas as operações do sistema de arquivos, gerencia o diretório atual do usuário (onde o cd está) e coordena a interação com o Journal.
@@ -61,12 +61,12 @@ Gerencia o log de operações. Possui métodos para registrar novas ações, rec
 
 ---
 
-## Parte 4: Instalação e funcionamento
+## Instalação e funcionamento
 
 ### Recursos utilizados
 - **Linguagem:** Java 11
-- **Bibliotecas Externas:** Nenhuma.
-- **Persistência:** Serialização (utilizando classe java Serialization) de objetos para salvar o estado em `data/filesystem.dat`.
+- **Bibliotecas Externas:** Nenhuma
+- **Persistência:** Serialização (utilizando classe java Serialization) de objetos para salvar o estado em `data/filesystem.dat`
 
 ### Orientações sobre a execução
 Recomendado utilizar uma IDE
@@ -99,7 +99,7 @@ Recomendado utilizar uma IDE
 Espera-se que esse simulador forneça uma experiência clara do funcionamento interno de um sistema de arquivos. Através da implementação do Journaling (tipo Write-Ahead Logging), o usuário deve ser capaz de:
 - Manipular uma hierarquia complexa de arquivos e pastas via linha de comando.
 - Visualizar o registro histórico de todas as alterações feitas no sistema.
-- Reverter operações indesejadas utilizando a função `undo`, demonstrando a utilidade do log para a integridade dos dados.
+- Reverter operações indesejadas utilizando a função `undo`, demonstrando a utilidade do log (Journal) para a integridade dos dados.
 - Persistir o estado do simulador em disco e recuperá-lo em execuções futuras.
 
 ---
