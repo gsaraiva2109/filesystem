@@ -4,192 +4,154 @@
 
 ---
 
-## Parte 1 — Introdução ao Sistema de Arquivos com Journaling
+## Autores
 
-### O que é um Sistema de Arquivos?
+- Gabriel Saraiva Siqueira
+- Gustavo Chaves Macedo
 
-Um sistema de arquivos (file system) é a estrutura que um sistema operacional utiliza para organizar, armazenar e recuperar dados em dispositivos de armazenamento, como HDs e SSDs. Ele define como os dados são estruturados no disco, como os arquivos recebem nomes, e como os diretórios organizam esses arquivos de forma hierárquica.
-
-Sem um sistema de arquivos, seria impossível gerenciar os dados persistidos em disco de forma organizada. Sistemas como FAT32, NTFS (Windows), ext4 (Linux) e APFS (macOS) são exemplos reais de sistemas de arquivos.
-
-### Conceito de Journaling
-
-**Journaling** é um mecanismo de integridade de dados que registra as operações a serem realizadas *antes* de executá-las. Esse registro é chamado de **journal** ou **log de transações**.
-
-Se o sistema travar no meio de uma operação (queda de energia, por exemplo), o journal permite que o SO saiba o que estava sendo feito e possa:
-- **Concluir** a operação (redo), ou
-- **Desfazê-la** (undo), garantindo que o disco nunca fique em estado inconsistente.
-
-### Tipos de Journaling
-
-| Tipo | Descrição |
-|------|-----------|
-| **Write-Ahead Logging (WAL)** | Registra a intenção *antes* de executar. Estratégia usada neste simulador. |
-| **Log-Structured** | Todo o sistema de arquivos é um log sequencial. Usado em SSDs e sistemas modernos. |
-| **Ordered** | Metadados vão ao journal; dados são gravados antes dos metadados. Padrão no ext3. |
-| **Data journaling** | Tanto dados quanto metadados são journaled. Mais seguro, porém mais lento. |
+> Trabalho realizado em dupla, conforme solicitado no enunciado.
 
 ---
 
-## Parte 2 — Arquitetura do Simulador
+## Resumo
 
-### Estrutura de Dados
-
-O simulador representa o sistema de arquivos como uma **árvore na memória**. Cada nó da árvore é um `FileNode`.
-
-```
-FileNode (abstrato)
-├── FileEntry  →  representa um arquivo (tem conteúdo)
-└── Directory  →  representa um diretório (tem filhos)
-```
-
-Um `Directory` armazena seus filhos em um `Map<String, FileNode>` (chave = nome do item). Isso permite acesso em O(1) por nome, simulando uma tabela de inodes simplificada.
-
-**Diagrama da árvore de exemplo:**
-
-```
-/  (root Directory)
-├── docs/  (Directory)
-│   ├── relatorio.txt  (FileEntry)
-│   └── notas.txt      (FileEntry)
-└── backup/  (Directory)
-    └── relatorio.txt  (FileEntry)
-```
-
-### Implementação do Journaling
-
-O journaling segue o padrão **Write-Ahead Logging**: o método `journal.record(operação)` é chamado **antes** de qualquer modificação na árvore.
-
-Cada entrada no log tem o formato:
-
-```
-[2026-05-31T10:00:00] MKDIR: /docs
-[2026-05-31T10:00:01] TOUCH: /docs/relatorio.txt
-[2026-05-31T10:00:02] COPY: /docs/relatorio.txt -> /backup/relatorio.txt
-```
-
-O journal é mantido em memória (lista de Strings) e exibido com o comando `log`.
+Este trabalho propõe o desenvolvimento de um simulador de sistema de arquivos em Java, com suporte a journaling, para representar em memória a organização hierárquica de arquivos e diretórios e executar operações básicas de um sistema operacional.
 
 ---
 
-## Parte 3 — Implementação em Java
+## Introdução
 
-### Classes
+O gerenciamento eficiente de arquivos é essencial para o funcionamento dos sistemas operacionais. Um sistema de arquivos organiza, armazena e recupera dados em dispositivos de armazenamento, permitindo a manipulação de arquivos e diretórios de forma estruturada.
 
-| Classe | Responsabilidade |
-|--------|-----------------|
-| `FileNode` | Classe abstrata base; armazena nome e flag `isDirectory` |
-| `FileEntry` | Representa um arquivo; estende `FileNode` |
-| `Directory` | Representa um diretório; estende `FileNode`; contém mapa de filhos |
-| `Journal` | Gerencia o log de operações (write-ahead logging) |
-| `FileSystemSimulator` | Implementa as 7 operações + resolução de caminhos |
-| `Main` | Shell REPL; lê comandos do usuário e chama o simulador |
+Neste projeto, foi desenvolvido um simulador que representa essa organização em memória e permite executar comandos típicos de um sistema de arquivos, incluindo criação, remoção, renomeação, cópia, listagem, navegação entre diretórios, persistência e registro de operações.
 
-### Classe `FileNode` (abstrata)
+---
 
-```java
-abstract class FileNode {
-    String name;
-    boolean isDirectory;
+## Objetivo
 
-    FileNode(String name, boolean isDirectory) {
-        this.name = name;
-        this.isDirectory = isDirectory;
-    }
-}
-```
+Desenvolver um simulador de sistema de arquivos em Java que implemente funcionalidades básicas de manipulação de arquivos e diretórios, com suporte a journaling para registrar operações e auxiliar na integridade e rastreabilidade das ações executadas.
 
-### Classe `Directory`
+---
 
-```java
-class Directory extends FileNode {
-    Map<String, FileNode> children = new LinkedHashMap<>();
+## Atenção aos detalhes do simulador
 
-    Directory(String name) {
-        super(name, true);
-    }
-}
-```
+**Linguagem de programação:** Java
+
+**Operações implementadas:**
+
+- Copiar arquivos
+- Apagar arquivos
+- Renomear arquivos
+- Criar diretórios
+- Apagar diretórios
+- Renomear diretórios
+- Listar arquivos de um diretório
+
+**Funcionalidades adicionais do simulador:**
+
+- Navegação entre diretórios com `cd`
+- Visualização da árvore com `tree`
+- Desfazer última operação com `undo`
+- Salvamento do estado com `save`
+- Registro de operações com `log`
+
+---
+
+## Metodologia
+
+O simulador foi desenvolvido em linguagem Java e recebe comandos por meio de um shell interativo. Cada comando executa uma operação no sistema de arquivos em memória, utilizando chamadas de métodos com os parâmetros correspondentes.
+
+As ações realizadas são registradas em um journal, permitindo rastrear as alterações executadas. O sistema também conta com persistência por meio de salvamento em arquivo.
+
+---
+
+## Parte 1: Introdução ao Sistema de Arquivos com Journaling
+
+### Descrição do sistema de arquivos
+
+Um sistema de arquivos é responsável por organizar e gerenciar dados em dispositivos de armazenamento. Ele define a estrutura hierárquica de arquivos e diretórios, além de regras para acesso, armazenamento e recuperação.
+
+### Journaling
+
+Journaling é uma técnica usada para registrar operações antes que elas sejam efetivamente aplicadas. Isso ajuda a manter a consistência do sistema e a rastrear mudanças feitas durante a execução.
+
+---
+
+## Parte 2: Arquitetura do Simulador
+
+### Estrutura de dados
+
+O simulador representa o sistema de arquivos como uma árvore em memória. A estrutura principal é formada pelas classes:
+
+- `FileNode`
+- `FileEntry`
+- `Directory`
+
+O diretório raiz contém os demais diretórios e arquivos, organizados hierarquicamente.
+
+### Journaling
+
+O journaling é gerenciado pela classe `Journal`, que armazena as operações executadas em ordem cronológica. Cada operação é registrada antes de ser aplicada na estrutura de dados.
+
+---
+
+## Parte 3: Implementação em Java
+
+### Classe `FileSystemSimulator`
+
+Responsável por implementar as operações do simulador, como:
+
+- criação e remoção de diretórios
+- criação e remoção de arquivos
+- renomeação
+- cópia
+- listagem
+- navegação
+- persistência
+- desfazer operações
 
 ### Classe `Journal`
 
-```java
-class Journal {
-    private List<String> log = new ArrayList<>();
+Gerencia o histórico das operações executadas no simulador, armazenando registros em formato de log.
 
-    void record(String operation) {
-        log.add("[" + LocalDateTime.now().format(FMT) + "] " + operation);
-    }
+### Classes `FileNode`, `FileEntry` e `Directory`
 
-    void printLog() {
-        log.forEach(System.out::println);
-    }
-}
-```
-
-### Exemplo de operação — `createDirectory`
-
-```java
-void createDirectory(String path) {
-    journal.record("MKDIR: " + path);      // 1. registra no journal (WAL)
-    Directory parent = resolveParent(path); // 2. localiza o diretório pai
-    String name = lastName(path);           // 3. extrai o nome final
-    parent.children.put(name, new Directory(name)); // 4. insere na árvore
-    System.out.println("Diretório criado: " + path);
-}
-```
+- `FileNode`: classe base abstrata
+- `FileEntry`: representa arquivos
+- `Directory`: representa diretórios e seus filhos
 
 ---
 
-## Parte 4 — Instalação e Execução
+## Parte 4: Instalação e funcionamento
 
 ### Requisitos
 
-- **Java 11** ou superior
-- Terminal (Linux, macOS ou Windows com PowerShell/CMD)
+- Java 11 ou superior
 
-Verificar instalação:
+### Execução
 
-```bash
-java -version
-```
+Após compilar o projeto, execute a classe `Main` para iniciar o shell interativo.
 
-### Clonar o Repositório
+### Comandos disponíveis
 
-```bash
-git clone https://github.com/gsaraiva2109/filesystem.git
-cd filesystem
-```
+| Comando | Descrição |
+|---------|-----------|
+| `mkdir <caminho>` | Cria diretório |
+| `rmdir <caminho>` | Remove diretório |
+| `renamedir <caminho> <novo-nome>` | Renomeia diretório |
+| `touch <caminho>` | Cria arquivo vazio |
+| `cp <origem> <destino>` | Copia arquivo |
+| `rm <caminho>` | Remove arquivo |
+| `rename <caminho> <novo-nome>` | Renomeia arquivo |
+| `ls [caminho]` | Lista diretório |
+| `cd <caminho>` | Altera diretório atual |
+| `tree [caminho]` | Exibe a árvore de diretórios |
+| `undo` | Desfaz a última operação registrada |
+| `save` | Salva o estado atual do sistema |
+| `log` | Exibe o journal |
+| `exit` | Encerra o simulador |
 
-### Compilar
-
-```bash
-mkdir out
-javac src/*.java -d out
-```
-
-### Executar
-
-```bash
-java -cp out Main
-```
-
-### Comandos Disponíveis
-
-| Comando | Descrição | Exemplo |
-|---------|-----------|---------|
-| `mkdir <caminho>` | Cria diretório | `mkdir /documentos` |
-| `rmdir <caminho>` | Remove diretório | `rmdir /documentos` |
-| `mvdir <caminho> <novo-nome>` | Renomeia diretório | `mvdir /documentos docs` |
-| `touch <caminho>` | Cria arquivo vazio | `touch /docs/texto.txt` |
-| `cp <origem> <destino>` | Copia arquivo | `cp /docs/a.txt /docs/b.txt` |
-| `rm <caminho>` | Remove arquivo | `rm /docs/texto.txt` |
-| `mv <caminho> <novo-nome>` | Renomeia arquivo | `mv /docs/a.txt b.txt` |
-| `ls [caminho]` | Lista diretório | `ls /docs` |
-| `log` | Exibe journal | `log` |
-| `exit` | Encerra o simulador | `exit` |
-
-### Exemplo de Sessão
+### Exemplo de sessão
 
 ```
 === Simulador de Sistema de Arquivos ===
@@ -202,26 +164,19 @@ Arquivo copiado: /docs/relatorio.txt -> /docs/backup.txt
 > ls /docs
 [FILE] relatorio.txt
 [FILE] backup.txt
-> rm /docs/relatorio.txt
-Arquivo removido: /docs/relatorio.txt
+> rename /docs/relatorio.txt relatorio_v2.txt
+Arquivo renomeado: relatorio.txt -> relatorio_v2.txt
+> rm /docs/backup.txt
+Arquivo removido: /docs/backup.txt
 > log
 [2026-05-31T10:00:00] MKDIR: /docs
 [2026-05-31T10:00:01] TOUCH: /docs/relatorio.txt
 [2026-05-31T10:00:02] COPY: /docs/relatorio.txt -> /docs/backup.txt
 [2026-05-31T10:00:03] LS: /docs
-[2026-05-31T10:00:04] RM: /docs/relatorio.txt
+[2026-05-31T10:00:04] MV: /docs/relatorio.txt -> relatorio_v2.txt
+[2026-05-31T10:00:05] RM: /docs/backup.txt
 > exit
 Encerrando simulador.
 ```
 
 ---
-
-## Resultados Esperados
-
-O simulador demonstra na prática:
-
-1. Como um sistema de arquivos organiza dados em estrutura de árvore.
-2. Como operações de manipulação (criar, copiar, mover, remover) alteram essa árvore.
-3. Como o **journaling WAL** registra cada operação antes de executá-la, garantindo rastreabilidade.
-
-Com isso, é possível compreender os princípios fundamentais que regem sistemas de arquivos reais como ext4 e NTFS.

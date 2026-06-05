@@ -278,6 +278,7 @@ class FileSystemSimulator {
         String op = extractOperation(last);
         String path = extractPath(last);
 
+        var substring = last.substring(last.indexOf(" -> ") + 4);
         switch (op) {
             case "MKDIR":
                 deleteDirectory(path, true);
@@ -290,16 +291,14 @@ class FileSystemSimulator {
                 break;
 
             case "COPY": {
-                String dest = last.substring(last.indexOf(" -> ") + 4);
-                deleteFile(dest, true);
+	            deleteFile(substring, true);
                 System.out.println("Desfeito: " + last);
                 break;
             }
 
             case "MV": {
-                String newName = last.substring(last.indexOf(" -> ") + 4);
-                String parent = parentPath(path);
-                String currentPath = parent.equals("/") ? "/" + newName : parent + "/" + newName;
+	            String parent = parentPath(path);
+                String currentPath = parent.equals("/") ? "/" + substring : parent + "/" + substring;
                 String origName = lastName(path);
                 renameFile(currentPath, origName, true);
                 System.out.println("Desfeito: " + last);
@@ -307,9 +306,8 @@ class FileSystemSimulator {
             }
 
             case "MVDIR": {
-                String newName = last.substring(last.indexOf(" -> ") + 4);
-                String parent = parentPath(path);
-                String currentPath = parent.equals("/") ? "/" + newName : parent + "/" + newName;
+	            String parent = parentPath(path);
+                String currentPath = parent.equals("/") ? "/" + substring : parent + "/" + substring;
                 String origName = lastName(path);
                 renameDirectory(currentPath, origName, true);
                 System.out.println("Desfeito: " + last);
