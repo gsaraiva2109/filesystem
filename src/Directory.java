@@ -2,7 +2,7 @@ import java.util.LinkedHashMap;
 
 class Directory extends FileNode {
     @java.io.Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1;
     LinkedHashMap<String, FileNode> children = new LinkedHashMap<>();
 
     Directory(String name) {

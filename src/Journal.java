@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 class Journal implements Serializable {
     @Serial
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1;
     private final ArrayList<String> log = new ArrayList<>();
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
