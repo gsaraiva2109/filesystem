@@ -5,134 +5,75 @@
 ---
 
 ## Autores
-
 - Gabriel Saraiva Siqueira
 - Gustavo Chaves Macedo
-
-> Trabalho realizado em dupla, conforme solicitado no enunciado.
-
----
-
-## Resumo
-
-Este trabalho propõe o desenvolvimento de um simulador de sistema de arquivos em Java, com suporte a journaling, para representar em memória a organização hierárquica de arquivos e diretórios e executar operações básicas de um sistema operacional.
-
----
-
-## Introdução
-
-O gerenciamento eficiente de arquivos é essencial para o funcionamento dos sistemas operacionais. Um sistema de arquivos organiza, armazena e recupera dados em dispositivos de armazenamento, permitindo a manipulação de arquivos e diretórios de forma estruturada.
-
-Neste projeto, foi desenvolvido um simulador que representa essa organização em memória e permite executar comandos típicos de um sistema de arquivos, incluindo criação, remoção, renomeação, cópia, listagem, navegação entre diretórios, persistência e registro de operações.
-
----
-
-## Objetivo
-
-Desenvolver um simulador de sistema de arquivos em Java que implemente funcionalidades básicas de manipulação de arquivos e diretórios, com suporte a journaling para registrar operações e auxiliar na integridade e rastreabilidade das ações executadas.
-
----
-
-## Atenção aos detalhes do simulador
-
-**Linguagem de programação:** Java
-
-**Operações implementadas:**
-
-- Copiar arquivos
-- Apagar arquivos
-- Renomear arquivos
-- Criar diretórios
-- Apagar diretórios
-- Renomear diretórios
-- Listar arquivos de um diretório
-
-**Funcionalidades adicionais do simulador:**
-
-- Navegação entre diretórios com `cd`
-- Visualização da árvore com `tree`
-- Desfazer última operação com `undo`
-- Salvamento do estado com `save`
-- Registro de operações com `log`
 
 ---
 
 ## Metodologia
-
-O simulador foi desenvolvido em linguagem Java e recebe comandos por meio de um shell interativo. Cada comando executa uma operação no sistema de arquivos em memória, utilizando chamadas de métodos com os parâmetros correspondentes.
-
-As ações realizadas são registradas em um journal, permitindo rastrear as alterações executadas. O sistema também conta com persistência por meio de salvamento em arquivo.
+O simulador foi desenvolvido em linguagem Java. Ele funciona através de chamadas de métodos com os devidos parâmetros. Foram implementados os comandos fundamentais de um sistema operacional.
 
 ---
 
-## Parte 1: Introdução ao Sistema de Arquivos com Journaling
+## Introdução ao Sistema de Arquivos com Journaling
 
 ### Descrição do sistema de arquivos
-
-Um sistema de arquivos é responsável por organizar e gerenciar dados em dispositivos de armazenamento. Ele define a estrutura hierárquica de arquivos e diretórios, além de regras para acesso, armazenamento e recuperação.
+Um sistema de arquivos é o componente do sistema operacional responsável por organizar, armazenar e recuperar dados em dispositivos, com o objetivo de gerenciar o espaço disponível, fornecer uma estrutura lógica como pastas e arquivos para o usuário, e garantir que as informações persistam de forma organizada.
 
 ### Journaling
+Journaling é uma técnica de combate a falhas que registra as mudanças em um "diário" (log) ao serem aplicadas ao sistema de arquivos principal. O propósito é garantir a consistência dos dados em caso de interrupções.
 
-Journaling é uma técnica usada para registrar operações antes que elas sejam efetivamente aplicadas. Isso ajuda a manter a consistência do sistema e a rastrear mudanças feitas durante a execução.
+**Tipos de Journaling:**
+- **Write-Ahead Logging (WAL):** As alterações são gravadas no log antes de serem aplicadas. É o método utilizado neste simulador. Permite a rastreabilidade e reversão de ações.
+- **Log-Structured File Systems:** Trata todo o sistema de arquivos como um log contínuo, onde novos dados são sempre anexados ao final, e o sistema é recriado de acordo com os logs a cada operação.
+- **Metadata Journaling:** Registra apenas mudanças nos metadados. Oferece um equilíbrio entre performance e segurança.
 
 ---
 
 ## Parte 2: Arquitetura do Simulador
 
-### Estrutura de dados
-
-O simulador representa o sistema de arquivos como uma árvore em memória. A estrutura principal é formada pelas classes:
-
-- `FileNode`
-- `FileEntry`
-- `Directory`
-
-O diretório raiz contém os demais diretórios e arquivos, organizados hierarquicamente.
+### Estrutura de Dados
+O simulador utiliza uma estrutura de árvore para representar a hierarquia de arquivos. Cada nó da árvore é representado por objetos (Directory ou FileEntry) que extendem de uma classe base (FileNode), permitindo que diretórios contenham tanto arquivos quanto outros subdiretórios.
 
 ### Journaling
+A implementação do journaling ocorre através de uma classe dedicada que mantém um histórico cronológico de operações. Cada operação de escrita (criar, renomear, copiar, remover) gera um registro de log contendo a data/hora, o tipo da operação e os caminhos envolvidos na operação. Esse log é lido pela função de "desfazer" (undo) para identificar e reverter a última ação lógica do sistema de arquivos.
 
-O journaling é gerenciado pela classe `Journal`, que armazena as operações executadas em ordem cronológica. Cada operação é registrada antes de ser aplicada na estrutura de dados.
+### Sobre
+O Filesystem e Journal não são visíveis a nível do sistema, todo o sistema de arquivos fica em um arquivo, o filesystem.dat e o journaling.dat.
+
+O comando `save` deve ser utilizado para salvar o sistema (filesystem e journal), o carregamento é automático ao iniciar o projeto.
 
 ---
 
 ## Parte 3: Implementação em Java
 
-### Classe `FileSystemSimulator`
+### Classe "FileSystemSimulator"
+É o núcleo do projeto. Implementa a lógica de negócio para todas as operações do sistema de arquivos, gerencia o diretório atual do usuário (onde o cd está) e coordena a interação com o Journal.
 
-Responsável por implementar as operações do simulador, como:
+### Classes File e Directory
+Representam as entidades básicas do sistema:
+- **Directory:** Representa pastas, contendo um mapa com seus nós filhos (FileNode, que são arquivos ou outras pastas).
+- **FileEntry:** Representa os arquivos individuais, armazenando seu nome.
+- **FileNode:** Classe base abstrata que define as propriedades comuns a arquivos e diretórios.
 
-- criação e remoção de diretórios
-- criação e remoção de arquivos
-- renomeação
-- cópia
-- listagem
-- navegação
-- persistência
-- desfazer operações
-
-### Classe `Journal`
-
-Gerencia o histórico das operações executadas no simulador, armazenando registros em formato de log.
-
-### Classes `FileNode`, `FileEntry` e `Directory`
-
-- `FileNode`: classe base abstrata
-- `FileEntry`: representa arquivos
-- `Directory`: representa diretórios e seus filhos
+### Classe Journal
+Gerencia o log de operações. Possui métodos para registrar novas ações, recuperar a última entrada para operação de undo e imprimir o histórico (Journal) completo (`log`).
 
 ---
 
 ## Parte 4: Instalação e funcionamento
 
-### Requisitos
+### Recursos utilizados
+- **Linguagem:** Java 11
+- **Bibliotecas Externas:** Nenhuma.
+- **Persistência:** Serialização (utilizando classe java Serialization) de objetos para salvar o estado em `data/filesystem.dat`.
 
-- Java 11 ou superior
-
-### Execução
-
-Após compilar o projeto, execute a classe `Main` para iniciar o shell interativo.
-
-### Comandos disponíveis
+### Orientações sobre a execução
+Recomendado utilizar uma IDE
+1. Certifique-se de ter o JDK 11 ou superior instalado.
+2. Compile os arquivos fonte na pasta `src/`.
+3. Execute a classe `Main`.
+4. Utilize o shell com os comandos abaixo:
 
 | Comando | Descrição |
 |---------|-----------|
@@ -146,37 +87,19 @@ Após compilar o projeto, execute a classe `Main` para iniciar o shell interativ
 | `ls [caminho]` | Lista diretório |
 | `cd <caminho>` | Altera diretório atual |
 | `tree [caminho]` | Exibe a árvore de diretórios |
-| `undo` | Desfaz a última operação registrada |
-| `save` | Salva o estado atual do sistema |
+| `undo` | Desfaz a última operação |
+| `save` | Salva o estado atual |
 | `log` | Exibe o journal |
 | `exit` | Encerra o simulador |
 
-### Exemplo de sessão
+---
 
-```
-=== Simulador de Sistema de Arquivos ===
-> mkdir /docs
-Diretório criado: /docs
-> touch /docs/relatorio.txt
-Arquivo criado: /docs/relatorio.txt
-> cp /docs/relatorio.txt /docs/backup.txt
-Arquivo copiado: /docs/relatorio.txt -> /docs/backup.txt
-> ls /docs
-[FILE] relatorio.txt
-[FILE] backup.txt
-> rename /docs/relatorio.txt relatorio_v2.txt
-Arquivo renomeado: relatorio.txt -> relatorio_v2.txt
-> rm /docs/backup.txt
-Arquivo removido: /docs/backup.txt
-> log
-[2026-05-31T10:00:00] MKDIR: /docs
-[2026-05-31T10:00:01] TOUCH: /docs/relatorio.txt
-[2026-05-31T10:00:02] COPY: /docs/relatorio.txt -> /docs/backup.txt
-[2026-05-31T10:00:03] LS: /docs
-[2026-05-31T10:00:04] MV: /docs/relatorio.txt -> relatorio_v2.txt
-[2026-05-31T10:00:05] RM: /docs/backup.txt
-> exit
-Encerrando simulador.
-```
+## Resultados Esperados
+
+Espera-se que esse simulador forneça uma experiência clara do funcionamento interno de um sistema de arquivos. Através da implementação do Journaling (tipo Write-Ahead Logging), o usuário deve ser capaz de:
+- Manipular uma hierarquia complexa de arquivos e pastas via linha de comando.
+- Visualizar o registro histórico de todas as alterações feitas no sistema.
+- Reverter operações indesejadas utilizando a função `undo`, demonstrando a utilidade do log para a integridade dos dados.
+- Persistir o estado do simulador em disco e recuperá-lo em execuções futuras.
 
 ---

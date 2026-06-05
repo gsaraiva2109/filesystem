@@ -16,7 +16,7 @@ class FileSystemSimulator {
         return currentPath;
     }
 
-    // --- path helpers ---
+    // path helpers
 
     private String toAbsolute(String path) {
         if (path.equals(".")) return currentPath;
@@ -60,7 +60,7 @@ class FileSystemSimulator {
         return current;
     }
 
-    // --- navigation ---
+    // navigation
 
     boolean changeDirectory(String path) {
         if (path.equals("..")) {
@@ -79,7 +79,7 @@ class FileSystemSimulator {
         return true;
     }
 
-    // --- directory operations ---
+    // directory operations
 
     void createDirectory(String path) {
         String abs = toAbsolute(path);
@@ -143,7 +143,7 @@ class FileSystemSimulator {
         if (!byJournal) System.out.println("Diretório renomeado: " + name + " -> " + newName);
     }
 
-    // --- file operations ---
+    // file operations
 
     void createFile(String path) {
         String abs = toAbsolute(path);
@@ -265,7 +265,7 @@ class FileSystemSimulator {
         }
     }
 
-    // --- undo ---
+    // undo
 
     void undo() {
         if (journal.isEmpty()) {
@@ -346,8 +346,6 @@ class FileSystemSimulator {
     void printJournal() {
         journal.printLog();
     }
-
-    // --- persistence ---
 
     void save() {
         var dir = new File("data");
