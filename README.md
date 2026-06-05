@@ -21,10 +21,10 @@ O simulador foi desenvolvido em linguagem Java. Ele funciona através de chamada
 Um sistema de arquivos é o componente do sistema operacional responsável por organizar, armazenar e recuperar dados em dispositivos, com o objetivo de gerenciar o espaço disponível, fornecer uma estrutura lógica como pastas e arquivos para o usuário, e garantir que as informações persistam de forma organizada.
 
 ### Journaling
-Journaling é uma técnica de combate a falhas que registra as mudanças em um "diário" (log) ao serem aplicadas ao sistema de arquivos principal. O propósito é garantir a consistência dos dados em caso de interrupções.
+Journaling é uma técnica de combate a falhas que registra as intenções de mudança em um "diário" (log). O propósito é garantir a consistência dos dados em caso de interrupções, permitindo rastrear o que foi feito ou o que estava prestes a ser feito.
 
 **Tipos de Journaling:**
-- **Write-Ahead Logging (WAL):** As alterações são gravadas no log antes de serem aplicadas. É o método utilizado neste simulador. Permite a rastreabilidade e reversão de ações.
+- **Write-Ahead Logging (WAL):** As alterações são gravadas no log antes de serem consolidadas. É o método utilizado nesse simulador: a operação é registrada no Journal assim que o comando é recebido, garantindo a rastreabilidade antes da conclusão da operação em memória e sua posterior persistência em disco.
 - **Log-Structured File Systems:** Trata todo o sistema de arquivos como um log contínuo, onde novos dados são sempre anexados ao final, e o sistema é recriado de acordo com os logs a cada operação.
 - **Metadata Journaling:** Registra apenas mudanças nos metadados. Oferece um equilíbrio entre performance e segurança.
 
@@ -36,7 +36,7 @@ Journaling é uma técnica de combate a falhas que registra as mudanças em um "
 O simulador utiliza uma estrutura de árvore para representar a hierarquia de arquivos. Cada nó da árvore é representado por objetos (Directory ou FileEntry) que extendem de uma classe base (FileNode), permitindo que diretórios contenham tanto arquivos quanto outros subdiretórios.
 
 ### Journaling
-A implementação do journaling ocorre através de uma classe dedicada que mantém um histórico cronológico de operações. Cada operação de escrita (criar, renomear, copiar, remover) gera um registro de log contendo a data/hora, o tipo da operação e os caminhos envolvidos na operação. Esse log é lido pela função de "desfazer" (undo) para identificar e reverter a última ação lógica do sistema de arquivos.
+A implementação do journaling ocorre através de uma classe que mantém um histórico cronológico de operações. Cada operação de escrita (criar, renomear, copiar, remover) gera um registro de log contendo a data/hora, o tipo da operação e os caminhos envolvidos na operação. Esse log é lido pela função de "desfazer" (undo) para identificar e reverter a última ação lógica do sistema de arquivos.
 
 ### Sobre
 O Filesystem e Journal não são visíveis a nível do sistema, todo o sistema de arquivos fica em um arquivo, o filesystem.dat e o journaling.dat.
